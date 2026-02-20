@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 
+const PAGE_SIZE = 5;
 const productController = {};
 
 productController.createProduct = async (req, res) => {
@@ -25,10 +26,22 @@ productController.createProduct = async (req, res) => {
 
 productController.getProducts = async (req, res) => {
   try {
-    const products = await Product.find({});
+    const { page, name } = req.query;
+    const condition = name ? { name: { $regex: name, $options: "i" } } : {};
+    let query = Product.find(condition);
+    let response = { status: "성공" };
+    if (page) {
+      query.skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE);
 
-    if (products.length > 0) {
-      res.status(200).json({ status: "성공", products });
+      const totalItemNum = await Product.find(condition).countDocuments();
+      const totalPageNum = Math.ceil(totalItemNum / PAGE_SIZE);
+      response.totalPageNum = totalPageNum;
+    }
+
+    const productList = await query.exec();
+    response.productList = productList;
+    if (productList.length > 0) {
+      res.status(200).json(response);
     } else {
       throw new Error("상품을 찾을 수 없습니다.");
     }
