@@ -73,4 +73,51 @@ cartController.getCartQty = async (req, res) => {
   }
 };
 
+cartController.updateCartItemQty = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { id } = req.params;
+    const { qty } = req.body;
+
+    const cart = await Cart.findOne({ userId }).populate({
+      path: "items",
+      populate: {
+        path: "productId",
+        model: "Product",
+      },
+    });
+    if (!cart) {
+      throw new Error("장바구니를 찾을 수 없습니다.");
+    }
+    const index = cart.items.findIndex((item) => item._id.equals(id));
+    if (index === -1) {
+      throw new Error("장바구니 아이템을 찾을 수 없습니다.");
+    }
+    cart.items[index].qty = qty;
+    await cart.save();
+    res.status(200).json({ status: "성공", data: cart.items });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ status: "장바구니 아이템 수정 실패", error: error.message });
+  }
+};
+
+cartController.deleteCartItem = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { id } = req.params;
+
+    const cart = await Cart.find({ userId });
+    cart.items = cart.items.filter((item) => !item._id.equals(id));
+
+    await cart.save();
+    res.status(200).json({ status: "성공", cartItemQty: cart.items.length });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ status: "장바구니 아이템 삭제 실패", error: error.message });
+  }
+};
+
 module.exports = cartController;
