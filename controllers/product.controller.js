@@ -27,7 +27,9 @@ productController.createProduct = async (req, res) => {
 productController.getProducts = async (req, res) => {
   try {
     const { page, name } = req.query;
-    const condition = name ? { name: { $regex: name, $options: "i" } } : {};
+    const condition = name
+      ? { name: { $regex: name, $options: "i" }, isDeleted: false }
+      : { isDeleted: false };
     let query = Product.find(condition);
     let response = { status: "성공" };
     if (page) {
@@ -50,6 +52,32 @@ productController.getProducts = async (req, res) => {
   }
 };
 
+productController.deleteProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findByIdAndUpdate(
+      { _id: productId },
+      { isDeleted: true },
+    );
+    if (!product) {
+      throw new Error("상품을 찾을 수 없습니다.");
+    }
+    res.status(200).json({ status: "성공", product });
+  } catch (error) {
+    res.status(400).json({ status: "상품 삭제 실패", error: error.message });
+  }
+};
+
+productController.getProductById = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findById({ _id: productId });
+    if (!product) throw new Error("상품을 찾을 수 없습니다.");
+    res.status(200).json({ status: "성공", product });
+  } catch (error) {
+    res.status(400).json({ status: "상품 조회 실패", error: error.message });
+  }
+};
 productController.updateProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -67,7 +95,8 @@ productController.updateProduct = async (req, res) => {
         price,
         stock,
         status,
-      },{ new: true },
+      },
+      { new: true },
     );
     if (!product) {
       throw new Error("상품을 찾을 수 없습니다.");
@@ -77,4 +106,5 @@ productController.updateProduct = async (req, res) => {
     res.status(400).json({ status: "상품 수정 실패", error: error.message });
   }
 };
+
 module.exports = productController;
