@@ -1,16 +1,17 @@
 const mongoose = require("mongoose");
 const User = require("./User");
 const Product = require("./Product");
+const Cart = require("./Cart");
 const Schema = mongoose.Schema;
 
 const orderSchema = new Schema(
   {
     shipTo: {
-      type: String,
+      type: Object,
       required: true,
     },
     contact: {
-      type: String,
+      type: Object,
       required: true,
     },
     totalPrice: {
@@ -20,24 +21,25 @@ const orderSchema = new Schema(
     userId: {
       type: mongoose.ObjectId,
       ref: User,
+      required: true,
     },
     status: {
       type: String,
       default: "preparing", // preparing(준비중), shipping(배송중), delivered(배송완료), refunded(환불)
+    },
+    orderNum: {
+      type: String,
     },
     items: [
       {
         productId: {
           type: mongoose.ObjectId,
           ref: Product,
+          required: true,
         },
         qty: {
           type: Number,
           default: 1,
-          required: true,
-        },
-        name: {
-          type: String,
           required: true,
         },
         size: {
@@ -62,6 +64,15 @@ orderSchema.methods.toJSON = function () {
 
   return obj;
 };
+
+orderSchema.post("save", async function () {
+  //카트 비우기
+  const cart = await Cart.findOne({
+    userId: this.userId,
+  });
+  cart.items = [];
+  await cart.save();
+});
 
 const Order = mongoose.model("Order", orderSchema);
 
