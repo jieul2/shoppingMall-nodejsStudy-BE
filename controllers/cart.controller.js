@@ -108,7 +108,10 @@ cartController.deleteCartItem = async (req, res) => {
     const { userId } = req;
     const { id } = req.params;
 
-    const cart = await Cart.find({ userId });
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      throw new Error("장바구니를 찾을 수 없습니다.");
+    }
     cart.items = cart.items.filter((item) => !item._id.equals(id));
 
     await cart.save();
