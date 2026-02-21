@@ -59,8 +59,6 @@ const orderSchema = new Schema(
 orderSchema.methods.toJSON = function () {
   const obj = this._doc;
   delete obj.__v; // Mongoose 버전키 제외
-  delete obj.updatedAt; // 업데이트 시간 제외
-  delete obj.createdAt; // 생성 시간 제외
 
   return obj;
 };
