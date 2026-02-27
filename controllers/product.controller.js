@@ -96,7 +96,7 @@ productController.updateProduct = async (req, res) => {
         stock,
         status,
       },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!product) {
       throw new Error("상품을 찾을 수 없습니다.");

@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const Address = require("../models/Address");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
@@ -88,6 +89,114 @@ authController.checkAdminPermission = async (req, res, next) => {
     }
   } catch (error) {
     res.status(400).json({ status: "권한 없음 : ", error: error.message });
+  }
+};
+
+authController.addAddress = async (req, res) => {
+  try {
+    const { userId } = req;
+    const {
+      firstName,
+      lastName,
+      address,
+      city,
+      zipCode,
+      phoneNumber,
+      isDefault,
+    } = req.body;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("유저를 찾을 수 없습니다.");
+    }
+    if (isDefault) {
+      // 기존의 기본 주소를 찾아서 isDefault를 false로 업데이트
+      await Address.updateMany(
+        { userId, "addressList.isDefault": true },
+        { $set: { "addressList.$.isDefault": false } },
+      );
+    }
+    const newAddress = new Address({
+      userId,
+      firstName,
+      lastName,
+      addressList: [
+        {
+          address,
+          city,
+          zipCode,
+          isDefault,
+        },
+      ],
+      phoneNumber,
+    });
+    await newAddress.save();
+    res.status(200).json({ status: "주소 추가 성공", newAddress });
+
+    // 주소 추가 로직 작성
+  } catch (error) {
+    res.status(400).json({ status: "주소 추가 실패 : ", error: error.message });
+  }
+};
+
+authController.getAddresses = async (req, res) => {
+  try {
+    const { userId } = req;
+    const addresses = await Address.find({ userId });
+    res.status(200).json({ status: "주소 조회 성공", addresses });
+  } catch (error) {
+    res.status(400).json({ status: "주소 조회 실패 : ", error: error.message });
+  }
+};
+
+authController.deleteAddress = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { addressId } = req.params;
+    await Address.findOneAndDelete({ _id: addressId, userId });
+    res.status(200).json({ status: "주소 삭제 성공" });
+  } catch (error) {
+    res.status(400).json({ status: "주소 삭제 실패 : ", error: error.message });
+  }
+};
+
+authController.updateAddress = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { addressId } = req.params;
+    const {
+      firstName,
+      lastName,
+      address,
+      city,
+      zipCode,
+      phoneNumber,
+      isDefault,
+    } = req.body;
+
+    if (isDefault) {
+      await Address.updateOne(
+        { userId },
+        { $set: { "addressList.$[].isDefault": false } },
+      );
+    }
+    const updatedAddress = await Address.findOneAndUpdate(
+      { userId, "addressList._id": addressId }, // 쿼리 조건: 유저 아이디와 배열 내 객체 아이디 매칭
+      {
+        $set: {
+          firstName,
+          lastName,
+          phoneNumber,
+          "addressList.$.address": address, // $는 쿼리에서 찾은 인덱스를 의미함
+          "addressList.$.city": city,
+          "addressList.$.zipCode": zipCode,
+          "addressList.$.isDefault": isDefault,
+        },
+      },
+      { returnDocument: "after" },
+    );
+    res.status(200).json({ status: "주소 수정 성공", updatedAddress });
+  } catch (error) {
+    res.status(400).json({ status: "주소 수정 실패 : ", error: error.message });
   }
 };
 

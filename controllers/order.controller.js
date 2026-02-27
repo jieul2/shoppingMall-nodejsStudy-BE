@@ -128,7 +128,7 @@ orderController.updateOrder = async (req, res) => {
     const order = await Order.findByIdAndUpdate(
       id,
       { status: status },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!order) throw new Error("주문을 찾을 수 없습니다.");
     res.status(200).json({ status: "주문 상태 업데이트 성공", order });
