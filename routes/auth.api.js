@@ -3,5 +3,6 @@ const authController = require("../controllers/auth.controller");
 const router = express.Router();
 
 router.post("/login", authController.loginWithEmail); // 로그인
+router.post("/google", authController.loginWithGoogle); // 구글 로그인
 
 module.exports = router;
